@@ -17,8 +17,8 @@ read-only → dry-run → ограниченная обратимая запис
 - [x] Создать GitHub-репозиторий.
 - [x] Зафиксировать целевую архитектуру.
 - [x] Подготовить README, roadmap, архитектурную и safety-документацию.
-- [x] Подготовить ChatGPT Project Instructions и Project Sources.
-- [ ] Подключить профиль проекта к `github-connector-knowledge` (профиль и bundle подготовлены отдельным PR; завершить после ручного merge).
+- [x] Подключить профиль проекта и runtime bundle к `github-connector-knowledge`.
+- [ ] Привести ChatGPT Project к bootstrap-only схеме: короткие Project Instructions + единственный Source `github_project_bootstrap.md`.
 - [ ] Принять решение по поддерживаемой версии ОС/Python для VPS.
 - [ ] Подготовить отдельного системного пользователя `mailbot`.
 - [ ] Проверить обновления безопасности, NTP, firewall и хранение секретов.
