@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local state
+state/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Secrets / OAuth
+.env
+.env.*
+credentials*.json
+client_secret*.json
+oauth*.json
+*token*
+*secret*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
