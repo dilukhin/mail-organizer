@@ -40,3 +40,8 @@ jobs:
         env:
           PYTHONPATH: src
         run: python -m mail_organizer --version
+
+      - name: Проверить Stage 0 VPS audit script
+        run: |
+          bash -n deploy/check-stage0-vps.sh
+          bash deploy/check-stage0-vps.sh --help > /dev/null
