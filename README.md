@@ -152,6 +152,19 @@ ChatGPT Work подчиняется тем же safety-ограничениям:
 
 Архитектура: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Разработка и тесты
+
+Минимальный поддерживаемый baseline кода — Python 3.11+. На Stage 0 тестовый каркас не требует реальных почтовых учётных данных, OAuth-секретов или доступа к Gmail/Microsoft Graph.
+
+Локальная проверка из корня репозитория:
+
+```bash
+PYTHONPATH=src python -m unittest discover -s tests -v
+PYTHONPATH=src python -m mail_organizer --version
+```
+
+GitHub Actions выполняет те же безопасные тесты на поддерживаемых версиях Python. Почтовые SDK и реальные provider credentials на Stage 0 намеренно не подключаются.
+
 ## Статус
 
 Репозиторий находится на стадии начального проектирования. Первый практический этап — **v0.1 read-only + dry-run**. До его завершения проект не должен изменять сообщения, папки или серверные правила реальных ящиков.
