@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mail-organizer"
+version = "0.0.0"
+description = "Безопасная организация Gmail и Outlook/Hotmail"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+mailctl = "mail_organizer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
