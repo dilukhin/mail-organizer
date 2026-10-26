@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Read-only аудит Stage 0 для Debian VPS.
+# Read-only аудит Stage 0 для поддерживаемого Debian / Ubuntu 24.04 LTS.
 # Скрипт намеренно не использует sudo и не меняет состояние системы.
 
 set -u
 
 fail_count=0
 unknown_count=0
+warn_count=0
 
 usage() {
   cat <<'EOF'
@@ -22,9 +23,9 @@ usage() {
   - наличие и права целевых каталогов mail-organizer.
 
 Коды завершения:
-  0 — FAIL/UNKNOWN нет;
+  0 — FAIL/WARN/UNKNOWN нет;
   2 — найден хотя бы один FAIL;
-  3 — FAIL нет, но есть UNKNOWN.
+  3 — FAIL нет, но есть WARN или UNKNOWN.
 
 Скрипт не выполняет sudo, apt update/upgrade, useradd/adduser, chmod/chown,
 systemctl enable/start/restart и не читает содержимое credentials.
@@ -40,6 +41,7 @@ emit() {
   case "$status" in
     FAIL) fail_count=$((fail_count + 1)) ;;
     UNKNOWN) unknown_count=$((unknown_count + 1)) ;;
+    WARN) warn_count=$((warn_count + 1)) ;;
   esac
 }
 
@@ -60,37 +62,43 @@ os_value() {
   ' /etc/os-release 2>/dev/null
 }
 
+evaluate_os() {
+  local os_id="$1"
+  local version="$2"
+  case "$os_id:$version" in
+    debian:13|debian:13.*)
+      emit PASS os "Debian 13 соответствует baseline"
+      ;;
+    debian:12|debian:12.*)
+      emit WARN os "Debian 12 допустим при подтверждённом LTS/security-контуре"
+      ;;
+    ubuntu:24.04)
+      emit PASS os "Ubuntu 24.04 LTS соответствует baseline; security state проверяется отдельно"
+      ;;
+    debian:*|ubuntu:*)
+      emit FAIL os "неподдерживаемая версия ОС: ${os_id:-unknown} ${version:-unknown}"
+      ;;
+    *)
+      emit FAIL os "ОС не входит в baseline: ${os_id:-unknown} ${version:-unknown}"
+      ;;
+  esac
+}
+
 check_os() {
   if [[ ! -r /etc/os-release ]]; then
     emit UNKNOWN os "нет доступа к /etc/os-release"
     return
   fi
 
-  local os_id version major
+  local os_id version
   os_id="$(os_value ID)"
   version="$(os_value VERSION_ID)"
-  major="${version%%.*}"
-
-  if [[ "$os_id" != "debian" ]]; then
-    emit WARN os "обнаружен ${os_id:-unknown} ${version:-unknown}; baseline проекта описан для Debian"
+  if [[ -z "$os_id" || -z "$version" ]]; then
+    emit UNKNOWN os "ID/VERSION_ID не распознаны"
     return
   fi
 
-  if [[ ! "$major" =~ ^[0-9]+$ ]]; then
-    emit UNKNOWN os "Debian найден, но VERSION_ID не распознан"
-    return
-  fi
-
-  case "$major" in
-    13) emit PASS os "Debian 13 соответствует baseline новой установки" ;;
-    12) emit WARN os "Debian 12 допустим только при подтверждённом LTS/security-контуре" ;;
-    0|1|2|3|4|5|6|7|8|9|10|11)
-      emit FAIL os "Debian ${version} ниже поддерживаемого baseline"
-      ;;
-    *)
-      emit WARN os "Debian ${version} новее документированного baseline; требуется review"
-      ;;
-  esac
+  evaluate_os "$os_id" "$version"
 
   if have dpkg; then
     emit INFO architecture "$(dpkg --print-architecture 2>/dev/null || printf 'unknown')"
@@ -179,7 +187,7 @@ check_apt_security() {
   fi
 
   if (( security_found == 1 )); then
-    emit PASS apt-security "security source найден; строки source не выводятся"
+    emit INFO apt-security "security source упомянут в настройках; активность и доступность репозитория не доказаны"
   else
     emit WARN apt-security "security source не подтверждён"
   fi
@@ -219,6 +227,12 @@ check_apt_security() {
   local upgradable
   upgradable="$(apt list --upgradable 2>/dev/null | tail -n +2 | sed '/^[[:space:]]*$/d' | wc -l | tr -d ' ')"
   emit INFO apt-upgradable "кандидатов на обновление по локальному cache: ${upgradable:-unknown}"
+  if [[ "$upgradable" =~ ^[0-9]+$ ]] && (( upgradable > 0 )); then
+    emit WARN apt-review "есть кандидаты обновления; отдельно оценить состав и security-критичность"
+  fi
+  if [[ -e /var/run/reboot-required ]]; then
+    emit WARN reboot-required "перезагрузка требуется; до планового обслуживания не выполнять"
+  fi
 }
 
 check_ntp() {
@@ -303,16 +317,16 @@ check_secret_storage() {
   check_path /var/lib/mail-organizer mailbot mailbot 700 state-dir
 
   if [[ -d /etc/mail-organizer/credentials ]]; then
-    local world_readable
-    world_readable="$(find /etc/mail-organizer/credentials -type f -perm -004 2>/dev/null | wc -l | tr -d ' ')"
-    if [[ "$world_readable" =~ ^[0-9]+$ ]]; then
+    local world_readable scan_output
+    if scan_output="$(find /etc/mail-organizer/credentials -type f -perm -004 -printf '.' 2>/dev/null)"; then
+      world_readable="${#scan_output}"
       if (( world_readable == 0 )); then
         emit PASS credentials-perms "world-readable credential files не найдены; содержимое не читалось"
       else
         emit FAIL credentials-perms "найдено world-readable credential files: ${world_readable}; имена не выводятся"
       fi
     else
-      emit UNKNOWN credentials-perms "не удалось проверить права credential files"
+      emit UNKNOWN credentials-perms "проверка прав неполная или доступ закрыт"
     fi
   fi
 }
@@ -340,17 +354,19 @@ main() {
   check_firewall
   check_secret_storage
 
-  printf '\nИтог: FAIL=%d UNKNOWN=%d\n' "$fail_count" "$unknown_count"
+  printf '\nИтог: FAIL=%d WARN=%d UNKNOWN=%d\n' "$fail_count" "$warn_count" "$unknown_count"
 
   if (( fail_count > 0 )); then
     exit 2
   fi
 
-  if (( unknown_count > 0 )); then
+  if (( unknown_count > 0 || warn_count > 0 )); then
     exit 3
   fi
 
   exit 0
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
