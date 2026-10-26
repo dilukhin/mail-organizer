@@ -178,6 +178,16 @@ PYTHONPATH=src python -m mail_organizer --version
 
 GitHub Actions выполняет те же безопасные тесты на поддерживаемых версиях Python. Почтовые SDK и реальные provider credentials на Stage 0 намеренно не подключаются.
 
+## Начатая реализация v0.1 (только искусственные данные)
+
+Первый безопасный срез: детерминированная классификация, абсолютный приоритет защищённого `ChatGPT-Control/...`, минимальные SQLite metadata/decisions/actions и локальный dry-run.
+
+```bash
+PYTHONPATH=src python -m mail_organizer sync --dry-run --fixture tests/fixtures/offline_messages.json --policy-dir policy
+```
+
+Пока это **не** реальная синхронизация Gmail/Outlook: нет OAuth, сетевых провайдеров, записи в почту и постоянной SQLite. Подробности и границы — [docs/OFFLINE_V01.md](docs/OFFLINE_V01.md).
+
 ## Статус
 
 Репозиторий находится на стадии начального проектирования. Первый практический этап — **v0.1 read-only + dry-run**. До его завершения проект не должен изменять сообщения, папки или серверные правила реальных ящиков.

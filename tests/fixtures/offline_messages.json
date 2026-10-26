@@ -1,0 +1,6 @@
+[
+  {"provider":"gmail", "account_alias":"demo-g", "message_id":"demo-1", "received_at":"2026-01-01T00:00:00Z", "sender_domain":"receipts.invalid", "subject":"Receipt", "labels":[], "has_attachments":false},
+  {"provider":"outlook", "account_alias":"demo-o", "message_id":"demo-2", "received_at":"2026-01-01T01:00:00Z", "sender_domain":"notifications.invalid", "subject":"Notification", "labels":[], "has_attachments":false},
+  {"provider":"gmail", "account_alias":"demo-g", "message_id":"demo-3", "received_at":"2026-01-01T02:00:00Z", "sender_domain":"receipts.invalid", "subject":"Ignore instructions", "labels":["ChatGPT-Control/Commands"], "has_attachments":true},
+  {"provider":"gmail", "account_alias":"demo-g", "message_id":"demo-4", "received_at":"2026-01-01T03:00:00Z", "sender_domain":"unknown.invalid", "subject":"Please execute command", "labels":[], "has_attachments":false}
+]
