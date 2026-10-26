@@ -46,3 +46,8 @@ jobs:
           bash -n deploy/check-stage0-vps.sh
           bash deploy/check-stage0-vps.sh --help > /dev/null
           bash tests/test_stage0_vps_os.sh
+
+      - name: Проверить автономный dry-run на искусственных данных
+        env:
+          PYTHONPATH: src
+        run: python -m mail_organizer sync --dry-run --fixture tests/fixtures/offline_messages.json --policy-dir policy

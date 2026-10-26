@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {"id": "demo_receipts", "sender_domain": "receipts.invalid", "subject_contains": "", "category": "receipts", "ownership": "managed"},
+    {"id": "demo_notifications", "sender_domain": "notifications.invalid", "subject_contains": "", "category": "notifications", "ownership": "managed"}
+  ]
+}
