@@ -178,6 +178,10 @@ PYTHONPATH=src python -m mail_organizer --version
 
 GitHub Actions выполняет те же безопасные тесты на поддерживаемых версиях Python. Почтовые SDK и реальные provider credentials на Stage 0 намеренно не подключаются.
 
+Для проверок HTTPS нужен OpenSSL CLI и loopback: одноразовый сертификат и ключ
+создаются только во временном каталоге. Внешний DNS, Gmail и OAuth Google в тестах
+не вызываются; runtime-зависимости Python остаются стандартными.
+
 ## Начатая реализация v0.1 (только искусственные данные)
 
 Первый безопасный срез: детерминированная классификация, абсолютный приоритет защищённого `ChatGPT-Control/...`, минимальные SQLite metadata/decisions/actions и локальный dry-run.
@@ -196,8 +200,10 @@ PYTHONPATH=src python -m mail_organizer sync --dry-run --fixture tests/fixtures/
 
 Подготовлен также серверный адаптер Gmail history: разбор метаданных и protected
 меток, полная ограниченная пагинация перед записью в SQLite, остановка на ошибках.
-Он проверяется искусственным транспортом. Собственные HTTPS/OAuth-клиент и начальная
-инвентаризация ещё не подключены; коннекторы ChatGPT Web/Work не используются.
+Он проверяется искусственным транспортом. Собственный ограниченный HTTPS reader,
+refresh ранее выданного grant и сверка аккаунта описаны в
+[docs/GMAIL_CLIENT.md](docs/GMAIL_CLIENT.md). Первичная OAuth-авторизация и начальная
+инвентаризация ещё не реализованы; коннекторы ChatGPT Web/Work не используются.
 Контракт и следующие шаги: [docs/GMAIL_ADAPTER.md](docs/GMAIL_ADAPTER.md).
 
 ## Статус

@@ -21,6 +21,8 @@ state/
 credentials*.json
 client_secret*.json
 oauth*.json
+.mail-organizer-grant-*
+.mail-organizer-refresh-*
 *token*
 *secret*
 *.pem

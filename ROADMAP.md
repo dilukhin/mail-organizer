@@ -44,6 +44,11 @@ Gmail history/metadata adapter подготовлен и связан с SQLite 
 ответах: [docs/GMAIL_ADAPTER.md](docs/GMAIL_ADAPTER.md). Это не закрывает OAuth,
 начальную инвентаризацию или реальную инкрементальную синхронизацию ниже.
 
+Следующий срез добавляет собственный ограниченный HTTPS transport, refresh
+ранее выданного grant и привязку ящика к SQLite. Проверки на искусственных
+ответах и локальном TLS — [docs/GMAIL_CLIENT.md](docs/GMAIL_CLIENT.md). Реальная
+первичная авторизация, bootstrap и эксплуатационная приёмка остаются открытыми.
+
 ### Почтовые адаптеры
 - [ ] Gmail OAuth только с необходимыми read-only правами.
 - [ ] Microsoft Graph OAuth только с необходимыми read-only правами.
