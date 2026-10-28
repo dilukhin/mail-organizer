@@ -180,7 +180,40 @@ class OfflineState:
                                  "WHERE provider=? AND account_alias=? AND scope_key=?", tuple(asdict(scope).values())).fetchone()
         return Checkpoint(*row) if row else Checkpoint()
 
-    def commit_page(self, scope: Scope, page: Page, rules: list[PolicyRule]) -> str:
+    def bind_identity(self, scope: Scope, identity_sha256: str) -> None:
+        """Связывает только новый пустой ящик; чужое/непривязанное старое состояние не принимается."""
+        if self._failed or not isinstance(identity_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", identity_sha256):
+            raise StateError("Привязка учётной записи не подтверждена")
+        db = self._conn
+        key = (scope.provider, scope.account_alias)
+        expected = (scope.scope_key, identity_sha256)
+        try:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT scope_key, identity_sha256 FROM account_bindings WHERE provider=? AND account_alias=?", key).fetchone()
+            if row is not None:
+                if row != expected:
+                    raise StateDrift("Привязка учётной записи изменилась")
+                db.execute("ROLLBACK")
+                return
+            for table in ("provider_cursors", "message_metadata", "sync_batches"):
+                if db.execute(f"SELECT 1 FROM {table} WHERE provider=? AND account_alias=? LIMIT 1", key).fetchone():
+                    raise StateDrift("Существующее состояние не имеет доказанной привязки")
+            db.execute("INSERT INTO account_bindings VALUES (?, ?, ?, ?)", (*key, *expected))
+            db.execute("COMMIT")
+            if db.execute("SELECT scope_key, identity_sha256 FROM account_bindings WHERE provider=? AND account_alias=?", key).fetchone() != expected:
+                raise StateError("Привязка не подтверждена чтением")
+        except (sqlite3.Error, StateError) as exc:
+            if db.in_transaction:
+                try:
+                    db.execute("ROLLBACK")
+                except sqlite3.Error:
+                    self._failed = True
+            if isinstance(exc, StateDrift) and not self._failed:
+                raise
+            self._failed = True
+            raise StateError("Привязка не подтверждена; обработка остановлена") from None
+
+    def commit_page(self, scope: Scope, page: Page, rules: list[PolicyRule], *, identity_sha256: str | None = None) -> str:
         """Фиксирует страницу целиком. Возвращает committed либо already_committed."""
         if self._failed:
             raise StateError("Соединение заблокировано; нужна диагностика")
@@ -194,6 +227,12 @@ class OfflineState:
         db = self._conn
         try:
             db.execute("BEGIN IMMEDIATE")
+            binding = db.execute("SELECT scope_key, identity_sha256 FROM account_bindings WHERE provider=? AND account_alias=?", key[:2]).fetchone()
+            if binding is not None:
+                if binding != (scope.scope_key, identity_sha256):
+                    raise StateDrift("Нет совпадающей привязки учётной записи")
+            elif identity_sha256 is not None:
+                raise StateDrift("Ящик ещё не связан с учётной записью")
             old = db.execute("SELECT payload_sha256 FROM sync_batches WHERE provider=? AND account_alias=? "
                              "AND scope_key=? AND batch_id=?", (*key, page.batch_id)).fetchone()
             if old:

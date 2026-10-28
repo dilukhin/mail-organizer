@@ -243,8 +243,8 @@ class GmailHistoryAdapter:
         return Page(batch_id, expected, end, messages)
 
 
-def sync_history(state: OfflineState, scope: Scope, adapter: GmailHistoryAdapter, rules: list[PolicyRule]) -> str:
+def sync_history(state: OfflineState, scope: Scope, adapter: GmailHistoryAdapter, rules: list[PolicyRule], *, identity_sha256: str | None = None) -> str:
     """Ни одной SQLite-записи, пока всё окно history и метаданные не подготовлены."""
     expected = state.checkpoint(scope)
     page = adapter.prepare(scope, expected)
-    return "no_changes" if page is None else state.commit_page(scope, page, rules)
+    return "no_changes" if page is None else state.commit_page(scope, page, rules, identity_sha256=identity_sha256)
