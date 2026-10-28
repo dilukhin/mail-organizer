@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "provider": "gmail",
+  "account_alias": "demo-gmail",
+  "scope_key": "all",
+  "pages": [
+    {
+      "batch_id": "demo-page-1",
+      "expected_revision": 0,
+      "expected_cursor": null,
+      "next_cursor": "synthetic-c1",
+      "messages": [
+        {
+          "provider": "gmail",
+          "account_alias": "demo-gmail",
+          "message_id": "demo-1",
+          "received_at": "2026-01-01T00:00:00Z",
+          "sender_domain": "receipts.invalid",
+          "subject": "Receipt",
+          "labels": [],
+          "has_attachments": false
+        }
+      ]
+    },
+    {
+      "batch_id": "demo-page-2",
+      "expected_revision": 1,
+      "expected_cursor": "synthetic-c1",
+      "next_cursor": "synthetic-c2",
+      "messages": [
+        {
+          "provider": "gmail",
+          "account_alias": "demo-gmail",
+          "message_id": "demo-1",
+          "received_at": "2026-01-01T00:00:00Z",
+          "sender_domain": "receipts.invalid",
+          "subject": "Receipt",
+          "labels": [
+            "ChatGPT-Control/Commands"
+          ],
+          "has_attachments": false
+        }
+      ]
+    }
+  ]
+}

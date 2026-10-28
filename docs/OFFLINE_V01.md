@@ -23,6 +23,10 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 
 ## Не готово
 
-Real Gmail/Graph OAuth read-only, инвентаризация labels/folders/rules, сохранение курсоров на диск, полноценные `categories.yaml`/`protected.yaml`/`retention.yaml`/`control-queue.yaml`, более широкие детерминированные policy, recovery/audit, systemd timer, стабильный многодневный soak и Gate v0.1 → v0.2.
+Real Gmail/Graph OAuth read-only, инвентаризация labels/folders/rules, полноценные `categories.yaml`/`protected.yaml`/`retention.yaml`/`control-queue.yaml`, более широкие детерминированные policy, recovery/audit, systemd timer, стабильный многодневный soak и Gate v0.1 → v0.2.
+
+Файловое состояние для **отдельного режима искусственных страниц** описано в
+[OFFLINE_STATE.md](OFFLINE_STATE.md). Ограничение «SQLite только в памяти» выше
+относится к исходной команде `sync --fixture`; она сохраняет прежнее поведение.
 
 Никаких изменений в Gmail, Outlook или VPS этот срез не разрешает.

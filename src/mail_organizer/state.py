@@ -4,19 +4,35 @@ from __future__ import annotations
 import sqlite3
 from .offline import Decision, MessageFeatures
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def open_memory_state() -> sqlite3.Connection:
     conn = sqlite3.connect(":memory:")
     conn.execute("PRAGMA foreign_keys = ON")
+    create_schema(conn)
+    return conn
+
+
+def create_schema(conn: sqlite3.Connection) -> None:
+    """Создаёт только новую схему; миграция существующей БД не выполняется."""
     conn.executescript("""
-        CREATE TABLE schema_version(version INTEGER NOT NULL CHECK (version = 1));
-        INSERT INTO schema_version VALUES (1);
+        BEGIN IMMEDIATE;
+        CREATE TABLE schema_version(version INTEGER NOT NULL CHECK (version = 2));
+        INSERT INTO schema_version VALUES (2);
         CREATE TABLE provider_cursors(
             provider TEXT NOT NULL, account_alias TEXT NOT NULL,
-            cursor_value TEXT NOT NULL, updated_at TEXT NOT NULL,
-            PRIMARY KEY(provider, account_alias)
+            scope_key TEXT NOT NULL, cursor_value TEXT NOT NULL,
+            revision INTEGER NOT NULL CHECK(revision > 0), policy_sha256 TEXT NOT NULL,
+            PRIMARY KEY(provider, account_alias, scope_key),
+            UNIQUE(provider, account_alias)
+        );
+        CREATE TABLE sync_batches(
+            provider TEXT NOT NULL, account_alias TEXT NOT NULL, scope_key TEXT NOT NULL,
+            batch_id TEXT NOT NULL, payload_sha256 TEXT NOT NULL,
+            revision INTEGER NOT NULL CHECK(revision > 0),
+            PRIMARY KEY(provider, account_alias, scope_key, batch_id),
+            UNIQUE(provider, account_alias, scope_key, revision)
         );
         CREATE TABLE message_metadata(
             provider TEXT NOT NULL, account_alias TEXT NOT NULL,
@@ -41,8 +57,8 @@ def open_memory_state() -> sqlite3.Connection:
               REFERENCES message_metadata(provider, account_alias, message_id)
         );
         CREATE TABLE incidents(id INTEGER PRIMARY KEY, reason_code TEXT NOT NULL, created_at TEXT NOT NULL);
+        COMMIT;
     """)
-    return conn
 
 
 def record_decision(conn: sqlite3.Connection, message: MessageFeatures, decision: Decision) -> None:
