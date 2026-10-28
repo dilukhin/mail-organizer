@@ -55,6 +55,11 @@ def _text(value: Any, field: str, limit: int) -> str:
 def parse_messages(path: Path, max_messages: int = 100) -> list[MessageFeatures]:
     """Фикстура содержит только признаки; body/HTML/secret fields отвергаются."""
     raw = json.loads(path.read_text(encoding="utf-8"))
+    return parse_message_data(raw, max_messages)
+
+
+def parse_message_data(raw: Any, max_messages: int = 100) -> list[MessageFeatures]:
+    """Проверяет те же признаки для страницы автономной синхронизации."""
     if not isinstance(raw, list) or len(raw) > max_messages:
         raise ValueError("Фикстура должна содержать не более 100 сообщений")
     allowed = {"provider", "account_alias", "message_id", "received_at", "sender_domain", "subject", "labels", "has_attachments"}
@@ -88,6 +93,11 @@ def parse_messages(path: Path, max_messages: int = 100) -> list[MessageFeatures]
 def load_rules(directory: Path) -> list[PolicyRule]:
     """Начальный ограниченный формат: JSON (допустимый поднабор YAML 1.2)."""
     raw = json.loads((directory / "rules.yaml").read_text(encoding="utf-8"))
+    return parse_rule_data(raw)
+
+
+def parse_rule_data(raw: Any) -> list[PolicyRule]:
+    """Общий строгий разбор правил для CLI и автономного состояния."""
     _object(raw, {"schema_version", "rules"}, {"schema_version", "rules"}, "rules.yaml")
     if type(raw["schema_version"]) is not int or raw["schema_version"] != 1:
         raise ValueError("Версия policy не поддерживается")
