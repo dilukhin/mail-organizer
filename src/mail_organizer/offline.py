@@ -17,10 +17,10 @@ class MessageFeatures:
     account_alias: str
     message_id: str
     received_at: str
-    sender_domain: str
-    subject: str
+    sender_domain: str | None
+    subject: str | None
     labels: tuple[str, ...]
-    has_attachments: bool
+    has_attachments: bool | None
 
 
 @dataclass(frozen=True)
@@ -77,14 +77,20 @@ def parse_message_data(raw: Any, max_messages: int = 100) -> list[MessageFeature
             raise ValueError("Повторяющийся идентификатор сообщения")
         seen.add(key)
         received = _text(item["received_at"], "received_at", 64)
-        domain = _text(item["sender_domain"], "sender_domain", 255).casefold().strip(".")
-        subject = _text(item["subject"], "subject", 500)
+        domain = item["sender_domain"]
+        if domain is not None:
+            domain = _text(domain, "sender_domain", 255).casefold().strip(".")
+            if not domain:
+                raise ValueError("Некорректный sender_domain")
+        subject = item["subject"]
+        if subject is not None and subject != "":
+            subject = _text(subject, "subject", 500)
         labels = item["labels"]
         if not isinstance(labels, list) or len(labels) > 32:
             raise ValueError("Некорректные labels")
         clean_labels = tuple(_text(v, "label", 200) for v in labels)
         flag = item["has_attachments"]
-        if type(flag) is not bool:
+        if flag is not None and type(flag) is not bool:
             raise ValueError("Некорректное has_attachments")
         output.append(MessageFeatures(provider, alias, msg_id, received, domain, subject, clean_labels, flag))
     return output
@@ -136,6 +142,8 @@ def is_protected(message: MessageFeatures) -> bool:
 def classify(message: MessageFeatures, rules: list[PolicyRule]) -> Decision:
     if is_protected(message):
         return Decision("PROTECTED", None, "none", "protected_control_scope")
+    if message.sender_domain is None or message.subject is None:
+        return Decision("REVIEW_REQUIRED", None, "none", "incomplete_metadata")
     applicable = [r for r in rules if message.sender_domain == r.sender_domain
                   and (not r.subject_contains or r.subject_contains in message.subject.casefold())]
     if not applicable:

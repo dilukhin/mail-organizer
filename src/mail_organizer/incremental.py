@@ -13,7 +13,7 @@ import stat
 
 from .offline import (ALLOWED_PROVIDERS, MessageFeatures, PolicyRule, classify,
                       parse_message_data, parse_rule_data)
-from .state import create_schema, open_memory_state
+from .state import SCHEMA_VERSION, create_schema, open_memory_state
 
 
 class StateError(ValueError):
@@ -162,7 +162,7 @@ class OfflineState:
             with closing(open_memory_state()) as expected:
                 if _signature(conn) != _signature(expected) or conn.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
                     raise StateError("Схема или целостность состояния не подтверждена")
-            if conn.execute("SELECT version FROM schema_version").fetchall() != [(2,)]:
+            if conn.execute("SELECT version FROM schema_version").fetchall() != [(SCHEMA_VERSION,)]:
                 raise StateError("Версия состояния не поддерживается")
         except (sqlite3.Error, StateError):
             conn.close()
@@ -215,7 +215,7 @@ class OfflineState:
                 msg_key = (msg.provider, msg.account_alias, msg.message_id)
                 db.execute("INSERT INTO message_metadata VALUES (?, ?, ?, ?, ?) ON CONFLICT(provider, account_alias, message_id) "
                            "DO UPDATE SET received_at=excluded.received_at, has_attachments=excluded.has_attachments",
-                           (*msg_key, msg.received_at, int(msg.has_attachments)))
+                           (*msg_key, msg.received_at, None if msg.has_attachments is None else int(msg.has_attachments)))
                 db.execute("INSERT INTO decisions VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(provider, account_alias, message_id) "
                            "DO UPDATE SET status=excluded.status, category=excluded.category, action_hint=excluded.action_hint, reason_code=excluded.reason_code",
                            (*msg_key, decision.status, decision.category, decision.action_hint, decision.reason_code))
