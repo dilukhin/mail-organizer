@@ -63,6 +63,7 @@ Work не заменяет server rules или `mail-worker`, не участв�
 - Codex/OpenCode — средства разработки и обслуживания кода, не штатный почтовый runtime.
 - Существующие provider rules по умолчанию `external`; не изменять и не удалять до явного перевода в `managed`.
 - Core, provider adapters, policy engine, safety и retention должны тестироваться без реальной почты и без ИИ.
+- Серверные Gmail/Graph adapters и их OAuth независимы от коннекторов ChatGPT Web/Work. Не использовать инструменты, сессии или credentials ChatGPT как серверную зависимость.
 
 Полная архитектура: `docs/ARCHITECTURE.md`.
 

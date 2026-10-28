@@ -40,6 +40,10 @@ read-only → dry-run → ограниченная обратимая запис
 расхождении policy/scope. Это частичная реализация состояния, без адаптеров и
 эксплуатационного допуска. Границы: [docs/OFFLINE_STATE.md](docs/OFFLINE_STATE.md).
 
+Gmail history/metadata adapter подготовлен и связан с SQLite на искусственных
+ответах: [docs/GMAIL_ADAPTER.md](docs/GMAIL_ADAPTER.md). Это не закрывает OAuth,
+начальную инвентаризацию или реальную инкрементальную синхронизацию ниже.
+
 ### Почтовые адаптеры
 - [ ] Gmail OAuth только с необходимыми read-only правами.
 - [ ] Microsoft Graph OAuth только с необходимыми read-only правами.

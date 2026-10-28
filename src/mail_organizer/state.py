@@ -4,7 +4,7 @@ from __future__ import annotations
 import sqlite3
 from .offline import Decision, MessageFeatures
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def open_memory_state() -> sqlite3.Connection:
@@ -18,8 +18,8 @@ def create_schema(conn: sqlite3.Connection) -> None:
     """Создаёт только новую схему; миграция существующей БД не выполняется."""
     conn.executescript("""
         BEGIN IMMEDIATE;
-        CREATE TABLE schema_version(version INTEGER NOT NULL CHECK (version = 2));
-        INSERT INTO schema_version VALUES (2);
+        CREATE TABLE schema_version(version INTEGER NOT NULL CHECK (version = 3));
+        INSERT INTO schema_version VALUES (3);
         CREATE TABLE provider_cursors(
             provider TEXT NOT NULL, account_alias TEXT NOT NULL,
             scope_key TEXT NOT NULL, cursor_value TEXT NOT NULL,
@@ -37,7 +37,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
         CREATE TABLE message_metadata(
             provider TEXT NOT NULL, account_alias TEXT NOT NULL,
             message_id TEXT NOT NULL, received_at TEXT NOT NULL,
-            has_attachments INTEGER NOT NULL CHECK (has_attachments IN (0, 1)),
+            has_attachments INTEGER CHECK (has_attachments IN (0, 1)),
             PRIMARY KEY(provider, account_alias, message_id)
         );
         CREATE TABLE decisions(
@@ -66,7 +66,7 @@ def record_decision(conn: sqlite3.Connection, message: MessageFeatures, decision
     key = (message.provider, message.account_alias, message.message_id)
     with conn:
         conn.execute("INSERT INTO message_metadata VALUES (?, ?, ?, ?, ?)",
-                     (*key, message.received_at, int(message.has_attachments)))
+                     (*key, message.received_at, None if message.has_attachments is None else int(message.has_attachments)))
         conn.execute("INSERT INTO decisions VALUES (?, ?, ?, ?, ?, ?, ?)",
                      (*key, decision.status, decision.category, decision.action_hint, decision.reason_code))
         if decision.status == "PROPOSED":
